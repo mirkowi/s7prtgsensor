@@ -29,8 +29,6 @@ int S7Client::area_code(S7Area area) {
 }
 
 std::string S7Client::error_text(int code) {
-    char buf[256] = {};
-    // snap7 provides Cli_ErrorText but it returns a static description
     std::ostringstream oss;
     oss << "0x" << std::hex << std::setw(8) << std::setfill('0') << code;
     return oss.str();
@@ -112,7 +110,7 @@ SzlReadResult S7Client::read_szl(int szl_id, int szl_index) {
     SzlReadResult r;
     r.record_length = buf.Header.LENTHDR;
     r.record_count  = buf.Header.N_DR;
-    int data_size = size - static_cast<int>(sizeof(TS7SZLHeader));
+    int data_size = size - static_cast<int>(sizeof(SZL_HEADER));
     if (data_size > 0)
         r.data.assign(buf.Data, buf.Data + data_size);
     LOG("SZL: record_len=" << r.record_length << " count=" << r.record_count

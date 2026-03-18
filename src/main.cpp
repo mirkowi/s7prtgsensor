@@ -168,6 +168,15 @@ int main(int argc, char* argv[]) {
         client.disconnect();
 
         // ── 6. Extract values (in original channel order) ─────────────────
+        auto to_double = [](const ChannelValue& v) -> double {
+            return std::visit([](auto&& x) -> double {
+                using T = std::decay_t<decltype(x)>;
+                if constexpr (std::is_same_v<T, bool>)             return x ? 1.0 : 0.0;
+                else if constexpr (std::is_same_v<T, std::string>) return 1.0;
+                else                                                return static_cast<double>(x);
+            }, v);
+        };
+
         std::vector<ChannelResult> results;
         results.reserve(cfg.channels.size());
 
