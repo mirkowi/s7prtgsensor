@@ -120,7 +120,8 @@ SzlReadResult S7Client::read_szl(int szl_id, int szl_index) {
 
 std::vector<uint16_t> S7Client::get_szl_list() {
     TS7SZLList list = {};
-    int count = 0;
+    // count muss auf die Pufferkapazität gesetzt werden (Anzahl word-Einträge in List[])
+    int count = static_cast<int>(sizeof(list.List) / sizeof(list.List[0]));
     int ret = Cli_ReadSZLList(client_, &list, &count);
     if (ret != 0)
         throw S7Exception("ReadSZLList failed: " + error_text(ret));
