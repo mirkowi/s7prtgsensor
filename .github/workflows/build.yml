@@ -25,17 +25,13 @@ jobs:
             -Uri "https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp" `
             -OutFile "third_party/nlohmann/json.hpp"
 
-      - name: Verify snap7 files (must be committed to repo)
+      - name: Download snap7 (from GitHub)
         shell: pwsh
         run: |
-          $missing = @()
-          if (-not (Test-Path "snap7/include/snap7.h"))  { $missing += "snap7/include/snap7.h" }
-          if (-not (Test-Path "snap7/lib/snap7.lib"))    { $missing += "snap7/lib/snap7.lib" }
-          if (-not (Test-Path "snap7/lib/snap7.dll"))    { $missing += "snap7/lib/snap7.dll" }
-          if ($missing.Count -gt 0) {
-            Write-Error "Fehlende snap7-Dateien im Repo:`n$($missing -join "`n")`nBitte snap7 von https://sourceforge.net/projects/snap7 herunterladen und committen."
-            exit 1
-          }
+          $base = "https://raw.githubusercontent.com/davenardella/snap7/master"
+          Invoke-WebRequest "$base/release/wrappers/c-cpp/snap7.h" -OutFile "snap7/include/snap7.h"
+          Invoke-WebRequest "$base/build/bin/win64/snap7.dll"       -OutFile "snap7/lib/snap7.dll"
+          Invoke-WebRequest "$base/build/bin/win64/snap7.lib"       -OutFile "snap7/lib/snap7.lib"
           Write-Host "snap7 OK:"
           Get-ChildItem snap7/include, snap7/lib
 
