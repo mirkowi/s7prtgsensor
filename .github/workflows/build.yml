@@ -28,9 +28,14 @@ jobs:
       - name: Download snap7
         shell: pwsh
         run: |
-          Invoke-WebRequest `
-            -Uri "https://downloads.sourceforge.net/project/snap7/1.4.2/Windows/snap7-full-1.4.2.7z" `
-            -OutFile "snap7.7z"
+          # curl.exe -L folgt SourceForge-Redirects zuverlässig
+          curl.exe -L -o snap7.7z `
+            "https://sourceforge.net/projects/snap7/files/1.4.2/Windows/snap7-full-1.4.2.7z/download"
+
+          $size = (Get-Item snap7.7z).Length
+          Write-Host "Downloaded snap7.7z: $size bytes"
+          if ($size -lt 500000) { Write-Error "Download zu klein – SourceForge-Redirect fehlgeschlagen"; exit 1 }
+
           7z x snap7.7z -osnap7_dist -y | Out-Null
 
           # Locate files regardless of exact internal folder structure
