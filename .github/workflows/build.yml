@@ -1,0 +1,97 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags:     ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-windows:
+    name: Windows x64 (MSVC)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Dependencies ───────────────────────────────────────────────────────
+
+      - name: Download nlohmann/json
+        shell: pwsh
+        run: |
+          Invoke-WebRequest `
+            -Uri "https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp" `
+            -OutFile "third_party/nlohmann/json.hpp"
+
+      - name: Download snap7
+        shell: pwsh
+        run: |
+          Invoke-WebRequest `
+            -Uri "https://downloads.sourceforge.net/project/snap7/1.4.2/Windows/snap7-full-1.4.2.7z" `
+            -OutFile "snap7.7z"
+          7z x snap7.7z -osnap7_dist -y | Out-Null
+
+          # Locate files regardless of exact internal folder structure
+          $dll = Get-ChildItem -Recurse snap7_dist -Filter "snap7.dll" |
+                   Where-Object { $_.FullName -match "Win64" } |
+                   Select-Object -First 1
+          $lib = Get-ChildItem -Recurse snap7_dist -Filter "snap7.lib" |
+                   Where-Object { $_.FullName -match "Win64" } |
+                   Select-Object -First 1
+          $h   = Get-ChildItem -Recurse snap7_dist -Filter "snap7.h" |
+                   Select-Object -First 1
+
+          if (-not $dll) { Write-Error "snap7.dll (Win64) not found"; exit 1 }
+          if (-not $lib) { Write-Error "snap7.lib (Win64) not found"; exit 1 }
+          if (-not $h)   { Write-Error "snap7.h not found";           exit 1 }
+
+          Copy-Item $dll.FullName "snap7/lib/snap7.dll"
+          Copy-Item $lib.FullName "snap7/lib/snap7.lib"
+          Copy-Item $h.FullName   "snap7/include/snap7.h"
+
+          Write-Host "snap7 files installed:"
+          Get-ChildItem snap7/include, snap7/lib
+
+      # ── Build ──────────────────────────────────────────────────────────────
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build
+        run: |
+          cmake --build build --config Release
+
+      - name: List output
+        shell: pwsh
+        run: Get-ChildItem build/Release/
+
+      # ── Artifact ───────────────────────────────────────────────────────────
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: s7sensor-windows-x64
+          path: |
+            build/Release/s7sensor.exe
+            build/Release/snap7.dll
+          if-no-files-found: error
+
+      # ── Release (nur bei v*-Tags) ──────────────────────────────────────────
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/Release/s7sensor.exe
+            build/Release/snap7.dll
+          body: |
+            ## PRTG S7 Sensor ${{ github.ref_name }}
+
+            ### Installation
+            1. `s7sensor.exe` + `snap7.dll` → `%PRTG_PROGRAM_ROOT%\Custom Sensors\EXEXML\`
+            2. Konfigurationsdatei (`s7sensor.json`) ebenfalls dorthin kopieren
+            3. Sensor-Typ: **EXE/Script Advanced**, Parameter: `--config "%scriptlocation%\s7sensor.json"`
