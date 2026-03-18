@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <optional>
 #include <algorithm>
 #include <filesystem>
 #include <stdexcept>
@@ -108,11 +109,19 @@ int main(int argc, char* argv[]) {
             parsed.push_back({i, pa});
         }
 
-        // ── 2. Group by (area, db_number) ─────────────────────────────────
-        std::map<GroupKey, std::vector<size_t>> groups; // key -> indices into parsed[]
+        // ── 2. Group MEMORY channels by (area, db_number) ─────────────────
+        // CPU_STATUS / CPU_INFO / SZL werden separat behandelt
+        auto is_memory = [](S7Area a) {
+            return a == S7Area::DB || a == S7Area::MK ||
+                   a == S7Area::PE || a == S7Area::PA;
+        };
+
+        std::map<GroupKey, std::vector<size_t>> groups;
         for (size_t i = 0; i < parsed.size(); ++i) {
-            GroupKey key{parsed[i].pa.area, parsed[i].pa.db_number};
-            groups[key].push_back(i);
+            if (is_memory(parsed[i].pa.area)) {
+                GroupKey key{parsed[i].pa.area, parsed[i].pa.db_number};
+                groups[key].push_back(i);
+            }
         }
 
         // ── 3. Connect ────────────────────────────────────────────────────
@@ -123,60 +132,84 @@ int main(int argc, char* argv[]) {
         std::string cpu_state = client.get_cpu_state();
         LOG("CPU state: " << cpu_state);
 
-        // ── 4. Batch read per group ───────────────────────────────────────
-        // For each group: find min/max byte range, do one read
-        struct BufferEntry {
-            AreaReadResult result;
-            GroupKey       key;
-        };
+        // ── 4. Batch read memory groups ───────────────────────────────────
         std::map<GroupKey, AreaReadResult> buffers;
 
         for (auto& [key, indices] : groups) {
             int min_byte = INT_MAX;
             int max_byte = 0;
-
             for (size_t idx : indices) {
                 auto& pa = parsed[idx].pa;
                 min_byte = std::min(min_byte, pa.byte_offset);
                 max_byte = std::max(max_byte, pa.byte_offset + pa.byte_size);
             }
-
             int count = max_byte - min_byte;
             LOG("Group area=" << static_cast<int>(key.area) << " db=" << key.db_number
                 << " start=" << min_byte << " count=" << count);
-
             buffers[key] = client.read_area(key.area, key.db_number, min_byte, count);
             buffers[key].start_byte = min_byte;
         }
 
+        // ── 5. Spezial-Reads (während Verbindung noch aktiv) ──────────────
+        std::optional<S7CpuInfoData>               cpu_info_cache;
+        std::map<std::pair<int,int>, SzlReadResult> szl_cache;
+
+        for (size_t i = 0; i < parsed.size(); ++i) {
+            auto& pa = parsed[i].pa;
+            if (pa.area == S7Area::CPU_INFO && !cpu_info_cache) {
+                cpu_info_cache = client.get_cpu_info();
+            } else if (pa.area == S7Area::SZL) {
+                auto key = std::make_pair(pa.szl_id, pa.szl_index);
+                if (szl_cache.find(key) == szl_cache.end())
+                    szl_cache[key] = client.read_szl(pa.szl_id, pa.szl_index);
+            }
+        }
+
         client.disconnect();
 
-        // ── 5. Extract values ─────────────────────────────────────────────
+        // ── 6. Extract values (in original channel order) ─────────────────
         std::vector<ChannelResult> results;
         results.reserve(cfg.channels.size());
 
         for (size_t i = 0; i < parsed.size(); ++i) {
-            auto& pc  = parsed[i];
-            auto& ch  = cfg.channels[pc.cfg_index];
-            auto& pa  = pc.pa;
+            auto& pc = parsed[i];
+            auto& ch = cfg.channels[pc.cfg_index];
+            auto& pa = pc.pa;
 
-            GroupKey key{pa.area, pa.db_number};
-            auto& buf = buffers.at(key);
+            ChannelValue val;
 
-            int local_offset = pa.byte_offset - buf.start_byte;
+            if (is_memory(pa.area)) {
+                GroupKey key{pa.area, pa.db_number};
+                auto& buf = buffers.at(key);
+                val = extract_value(buf.data, pa.byte_offset - buf.start_byte,
+                                    pa.bit_number, ch.datatype);
 
-            ChannelValue val = extract_value(buf.data, local_offset, pa.bit_number, ch.datatype);
-            LOG("Channel '" << ch.name << "' raw=" << std::visit([](auto v){ return std::to_string(v); }, val));
+            } else if (pa.area == S7Area::CPU_STATUS) {
+                val = (cpu_state == "RUN") ? int64_t(1) : int64_t(0);
 
-            // Convert to double for scaling
-            double raw_d = std::visit([](auto v) -> double {
-                if constexpr (std::is_same_v<decltype(v), bool>)
-                    return v ? 1.0 : 0.0;
-                else
-                    return static_cast<double>(v);
-            }, val);
+            } else if (pa.area == S7Area::CPU_INFO) {
+                switch (pa.cpu_info_field) {
+                    case CpuInfoField::MODULE_TYPE_NAME: val = cpu_info_cache->module_type_name; break;
+                    case CpuInfoField::SERIAL_NUMBER:    val = cpu_info_cache->serial_number;    break;
+                    case CpuInfoField::AS_NAME:          val = cpu_info_cache->as_name;          break;
+                    case CpuInfoField::MODULE_NAME:      val = cpu_info_cache->module_name;      break;
+                    case CpuInfoField::COPYRIGHT:        val = cpu_info_cache->copyright;        break;
+                    default:                             val = std::string("?");
+                }
 
-            double scaled = apply_scale(raw_d, ch.scale_factor, ch.scale_offset);
+            } else if (pa.area == S7Area::SZL) {
+                auto key = std::make_pair(pa.szl_id, pa.szl_index);
+                val = extract_value(szl_cache.at(key).data,
+                                    pa.byte_offset, 0, ch.datatype);
+            } else {
+                val = int64_t(0);
+            }
+
+            double raw_d  = to_double(val);
+            double scaled = std::holds_alternative<std::string>(val)
+                            ? 1.0
+                            : apply_scale(raw_d, ch.scale_factor, ch.scale_offset);
+
             LOG("Channel '" << ch.name << "' scaled=" << scaled);
 
             ChannelResult cr;
@@ -186,7 +219,7 @@ int main(int argc, char* argv[]) {
             results.push_back(cr);
         }
 
-        // ── 6. Output ─────────────────────────────────────────────────────
+        // ── 7. Output ─────────────────────────────────────────────────────
         output_prtg_success(results, "PLC " + cpu_state);
 
     } catch (const std::exception& e) {

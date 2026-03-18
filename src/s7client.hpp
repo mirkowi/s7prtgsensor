@@ -16,6 +16,20 @@ struct AreaReadResult {
     int  start_byte = 0;   // first byte offset that was read
 };
 
+struct S7CpuInfoData {
+    std::string module_type_name;
+    std::string serial_number;
+    std::string as_name;
+    std::string copyright;
+    std::string module_name;
+};
+
+struct SzlReadResult {
+    std::vector<uint8_t> data;         // raw bytes nach dem Header
+    int record_length = 0;             // LENTHDR: Länge eines Datensatzes
+    int record_count  = 0;             // N_DR:    Anzahl Datensätze
+};
+
 class S7Client {
 public:
     S7Client();
@@ -30,7 +44,9 @@ public:
 
     AreaReadResult read_area(S7Area area, int db_number, int start_byte, int byte_count);
 
-    std::string get_cpu_state();
+    std::string    get_cpu_state();
+    S7CpuInfoData  get_cpu_info();
+    SzlReadResult  read_szl(int szl_id, int szl_index);
 
 private:
     S7Object client_ = 0;

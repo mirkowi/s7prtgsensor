@@ -37,6 +37,50 @@
       "address": "MW100",
       "datatype": "WORD",
       "unit": "Count"
+    },
+
+    {
+      "comment": "--- CPU-Status und Identifikation ---",
+      "name": "CPU Status",
+      "address": "CPU.Status",
+      "datatype": "BOOL",
+      "unit": "Custom",
+      "customunit": "RUN=1/STOP=0"
+    },
+    {
+      "name": "CPU Typ",
+      "address": "CPU.Info.ModuleTypeName",
+      "datatype": "BOOL"
+    },
+    {
+      "name": "CPU Seriennummer",
+      "address": "CPU.Info.SerialNumber",
+      "datatype": "BOOL"
+    },
+    {
+      "name": "AS-Name",
+      "address": "CPU.Info.ASName",
+      "datatype": "BOOL"
+    },
+    {
+      "name": "Modulname",
+      "address": "CPU.Info.ModuleName",
+      "datatype": "BOOL"
+    },
+
+    {
+      "comment": "--- SZL-Beispiele (Systemzustandsliste) ---",
+      "name": "SZL Betriebsart (0x0132/4 Byte0)",
+      "address": "SZL.0x0132.4.0",
+      "datatype": "WORD",
+      "unit": "Custom",
+      "customunit": "Mode"
+    },
+    {
+      "name": "SZL Diagnosepuffer Einträge (0x0074/1 Byte0)",
+      "address": "SZL.0x0074.1.0",
+      "datatype": "WORD",
+      "unit": "Count"
     }
   ]
 }

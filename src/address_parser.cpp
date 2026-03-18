@@ -176,5 +176,46 @@ ParsedAddress parse_address(const std::string& addr, S7DataType dtype) {
         }
     }
 
+    // --- CPU.Status ---
+    if (a == "CPU.STATUS") {
+        pa.area      = S7Area::CPU_STATUS;
+        pa.byte_size = 0;
+        return pa;
+    }
+
+    // --- CPU.Info.* ---
+    {
+        static const std::pair<const char*, CpuInfoField> info_fields[] = {
+            {"CPU.INFO.MODULETYPENAME", CpuInfoField::MODULE_TYPE_NAME},
+            {"CPU.INFO.SERIALNUMBER",   CpuInfoField::SERIAL_NUMBER},
+            {"CPU.INFO.ASNAME",         CpuInfoField::AS_NAME},
+            {"CPU.INFO.MODULENAME",     CpuInfoField::MODULE_NAME},
+            {"CPU.INFO.COPYRIGHT",      CpuInfoField::COPYRIGHT},
+        };
+        for (auto& [key, field] : info_fields) {
+            if (a == key) {
+                pa.area           = S7Area::CPU_INFO;
+                pa.cpu_info_field = field;
+                pa.byte_size      = 0;
+                return pa;
+            }
+        }
+    }
+
+    // --- SZL.<hex_id>.<index>.<byte_offset> ---
+    // Beispiel: SZL.0x0132.4.0  oder  SZL.306.4.0
+    {
+        static const std::regex re_szl(R"(^SZL\.(0X[0-9A-F]+|\d+)\.(\d+)\.(\d+)$)");
+        std::smatch m;
+        if (std::regex_match(a, m, re_szl)) {
+            pa.area        = S7Area::SZL;
+            pa.szl_id      = static_cast<int>(std::stoul(m[1].str(), nullptr, 0));
+            pa.szl_index   = std::stoi(m[2]);
+            pa.byte_offset = std::stoi(m[3]);
+            pa.byte_size   = dtype_bytes(dtype);
+            return pa;
+        }
+    }
+
     throw std::runtime_error("Cannot parse address: " + addr);
 }

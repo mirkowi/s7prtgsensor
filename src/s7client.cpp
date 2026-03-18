@@ -83,6 +83,43 @@ AreaReadResult S7Client::read_area(S7Area area, int db_number, int start_byte, i
     return result;
 }
 
+S7CpuInfoData S7Client::get_cpu_info() {
+    TS7CpuInfo info = {};
+    int ret = Cli_GetCpuInfo(client_, &info);
+    if (ret != 0) {
+        LOG("GetCpuInfo failed: " << error_text(ret));
+        throw S7Exception("GetCpuInfo failed: " + error_text(ret));
+    }
+    S7CpuInfoData d;
+    d.module_type_name = std::string(info.ModuleTypeName);
+    d.serial_number    = std::string(info.SerialNumber);
+    d.as_name          = std::string(info.ASName);
+    d.copyright        = std::string(info.Copyright);
+    d.module_name      = std::string(info.ModuleName);
+    LOG("CpuInfo: type=" << d.module_type_name << " sn=" << d.serial_number);
+    return d;
+}
+
+SzlReadResult S7Client::read_szl(int szl_id, int szl_index) {
+    TS7SZL buf = {};
+    int size = static_cast<int>(sizeof(TS7SZL));
+
+    LOG("ReadSZL id=0x" << std::hex << szl_id << std::dec << " index=" << szl_index);
+    int ret = Cli_ReadSZL(client_, szl_id, szl_index, &buf, &size);
+    if (ret != 0)
+        throw S7Exception("ReadSZL failed: " + error_text(ret));
+
+    SzlReadResult r;
+    r.record_length = buf.Header.LENTHDR;
+    r.record_count  = buf.Header.N_DR;
+    int data_size = size - static_cast<int>(sizeof(TS7SZLHeader));
+    if (data_size > 0)
+        r.data.assign(buf.Data, buf.Data + data_size);
+    LOG("SZL: record_len=" << r.record_length << " count=" << r.record_count
+        << " data_bytes=" << r.data.size());
+    return r;
+}
+
 std::string S7Client::get_cpu_state() {
     int status = 0;
     int ret = Cli_GetPlcStatus(client_, &status);

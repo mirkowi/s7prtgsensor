@@ -4,7 +4,7 @@
 #include <variant>
 #include <cstdint>
 
-using ChannelValue = std::variant<bool, int64_t, double>;
+using ChannelValue = std::variant<bool, int64_t, double, std::string>;
 
 // Extract a value from a byte buffer.
 // local_offset: byte index within the buffer (already relative to buffer start)
