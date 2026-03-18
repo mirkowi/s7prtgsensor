@@ -28,13 +28,22 @@ jobs:
       - name: Download snap7
         shell: pwsh
         run: |
-          # curl.exe -L folgt SourceForge-Redirects zuverlässig
-          curl.exe -L -o snap7.7z `
-            "https://sourceforge.net/projects/snap7/files/1.4.2/Windows/snap7-full-1.4.2.7z/download"
-
-          $size = (Get-Item snap7.7z).Length
-          Write-Host "Downloaded snap7.7z: $size bytes"
-          if ($size -lt 500000) { Write-Error "Download zu klein – SourceForge-Redirect fehlgeschlagen"; exit 1 }
+          # Direkte Mirror-URLs umgehen die SourceForge HTML-Warteseite
+          $mirrors = @(
+            "https://netix.dl.sourceforge.net/project/snap7/1.4.2/Windows/snap7-full-1.4.2.7z",
+            "https://netcologne.dl.sourceforge.net/project/snap7/1.4.2/Windows/snap7-full-1.4.2.7z",
+            "https://phoenixnap.dl.sourceforge.net/project/snap7/1.4.2/Windows/snap7-full-1.4.2.7z"
+          )
+          $ok = $false
+          foreach ($url in $mirrors) {
+            Write-Host "Trying: $url"
+            curl.exe -L -A "Mozilla/5.0" -o snap7.7z $url
+            $size = (Get-Item snap7.7z).Length
+            Write-Host "Size: $size bytes"
+            if ($size -gt 1000000) { $ok = $true; break }
+            Write-Host "Too small, trying next mirror..."
+          }
+          if (-not $ok) { Write-Error "All mirrors failed"; exit 1 }
 
           7z x snap7.7z -osnap7_dist -y | Out-Null
 
