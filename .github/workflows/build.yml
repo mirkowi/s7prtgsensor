@@ -25,47 +25,18 @@ jobs:
             -Uri "https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp" `
             -OutFile "third_party/nlohmann/json.hpp"
 
-      - name: Download snap7
+      - name: Verify snap7 files (must be committed to repo)
         shell: pwsh
         run: |
-          # Direkte Mirror-URLs umgehen die SourceForge HTML-Warteseite
-          $mirrors = @(
-            "https://netix.dl.sourceforge.net/project/snap7/1.4.2/Windows/snap7-full-1.4.2.7z",
-            "https://netcologne.dl.sourceforge.net/project/snap7/1.4.2/Windows/snap7-full-1.4.2.7z",
-            "https://phoenixnap.dl.sourceforge.net/project/snap7/1.4.2/Windows/snap7-full-1.4.2.7z"
-          )
-          $ok = $false
-          foreach ($url in $mirrors) {
-            Write-Host "Trying: $url"
-            curl.exe -L -A "Mozilla/5.0" -o snap7.7z $url
-            $size = (Get-Item snap7.7z).Length
-            Write-Host "Size: $size bytes"
-            if ($size -gt 1000000) { $ok = $true; break }
-            Write-Host "Too small, trying next mirror..."
+          $missing = @()
+          if (-not (Test-Path "snap7/include/snap7.h"))  { $missing += "snap7/include/snap7.h" }
+          if (-not (Test-Path "snap7/lib/snap7.lib"))    { $missing += "snap7/lib/snap7.lib" }
+          if (-not (Test-Path "snap7/lib/snap7.dll"))    { $missing += "snap7/lib/snap7.dll" }
+          if ($missing.Count -gt 0) {
+            Write-Error "Fehlende snap7-Dateien im Repo:`n$($missing -join "`n")`nBitte snap7 von https://sourceforge.net/projects/snap7 herunterladen und committen."
+            exit 1
           }
-          if (-not $ok) { Write-Error "All mirrors failed"; exit 1 }
-
-          7z x snap7.7z -osnap7_dist -y | Out-Null
-
-          # Locate files regardless of exact internal folder structure
-          $dll = Get-ChildItem -Recurse snap7_dist -Filter "snap7.dll" |
-                   Where-Object { $_.FullName -match "Win64" } |
-                   Select-Object -First 1
-          $lib = Get-ChildItem -Recurse snap7_dist -Filter "snap7.lib" |
-                   Where-Object { $_.FullName -match "Win64" } |
-                   Select-Object -First 1
-          $h   = Get-ChildItem -Recurse snap7_dist -Filter "snap7.h" |
-                   Select-Object -First 1
-
-          if (-not $dll) { Write-Error "snap7.dll (Win64) not found"; exit 1 }
-          if (-not $lib) { Write-Error "snap7.lib (Win64) not found"; exit 1 }
-          if (-not $h)   { Write-Error "snap7.h not found";           exit 1 }
-
-          Copy-Item $dll.FullName "snap7/lib/snap7.dll"
-          Copy-Item $lib.FullName "snap7/lib/snap7.lib"
-          Copy-Item $h.FullName   "snap7/include/snap7.h"
-
-          Write-Host "snap7 files installed:"
+          Write-Host "snap7 OK:"
           Get-ChildItem snap7/include, snap7/lib
 
       # ── Build ──────────────────────────────────────────────────────────────

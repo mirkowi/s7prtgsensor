@@ -2,15 +2,13 @@
 build/
 out/
 
-# snap7 binaries (must be downloaded manually)
-snap7/include/snap7.h
-snap7/lib/snap7.lib
-snap7/lib/snap7.dll
-snap7/lib/snap7.a
-snap7/bin/
+# snap7 binaries werden im Repo gespeichert (kein externer Download nötig)
+# snap7/include/snap7.h   ← committed
+# snap7/lib/snap7.lib     ← committed
+# snap7/lib/snap7.dll     ← committed
 
-# nlohmann/json (must be downloaded manually)
-third_party/nlohmann/json.hpp
+# nlohmann/json wird in der CI heruntergeladen, lokal kann es committed werden
+# third_party/nlohmann/json.hpp
 
 # IDE / OS
 .vscode/
