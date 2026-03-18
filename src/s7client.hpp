@@ -44,9 +44,10 @@ public:
 
     AreaReadResult read_area(S7Area area, int db_number, int start_byte, int byte_count);
 
-    std::string    get_cpu_state();
-    S7CpuInfoData  get_cpu_info();
-    SzlReadResult  read_szl(int szl_id, int szl_index);
+    std::string            get_cpu_state();
+    S7CpuInfoData          get_cpu_info();
+    SzlReadResult          read_szl(int szl_id, int szl_index);
+    std::vector<uint16_t>  get_szl_list();   // liefert alle verfügbaren SZL-IDs
 
 private:
     S7Object client_ = 0;

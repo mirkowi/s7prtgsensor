@@ -118,6 +118,21 @@ SzlReadResult S7Client::read_szl(int szl_id, int szl_index) {
     return r;
 }
 
+std::vector<uint16_t> S7Client::get_szl_list() {
+    TS7SZLList list = {};
+    int count = 0;
+    int ret = Cli_ReadSZLList(client_, &list, &count);
+    if (ret != 0)
+        throw S7Exception("ReadSZLList failed: " + error_text(ret));
+
+    std::vector<uint16_t> ids;
+    ids.reserve(static_cast<size_t>(count));
+    for (int i = 0; i < count; ++i)
+        ids.push_back(list.List[i]);
+    LOG("SZLList: " << count << " IDs available");
+    return ids;
+}
+
 std::string S7Client::get_cpu_state() {
     int status = 0;
     int ret = Cli_GetPlcStatus(client_, &status);

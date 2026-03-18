@@ -6,6 +6,7 @@
 #include "logger.hpp"
 
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <vector>
 #include <map>
@@ -24,10 +25,13 @@ struct CliArgs {
     int         rack_override  = -1;
     int         slot_override  = -1;
     bool        debug          = false;
+    bool        list_szl       = false;
 };
 
 static void usage(const char* prog) {
-    std::cerr << "Usage: " << prog << " [--config <path>] [--ip <addr>] [--rack <n>] [--slot <n>] [--debug]\n";
+    std::cerr << "Usage: " << prog
+              << " [--config <path>] [--ip <addr>] [--rack <n>] [--slot <n>]"
+              << " [--debug] [--list-szl]\n";
 }
 
 static CliArgs parse_args(int argc, char* argv[]) {
@@ -44,6 +48,8 @@ static CliArgs parse_args(int argc, char* argv[]) {
             args.rack_override = std::stoi(argv[++i]);
         } else if (a == "--slot" && i + 1 < argc) {
             args.slot_override = std::stoi(argv[++i]);
+        } else if (a == "--list-szl") {
+            args.list_szl = true;
         } else if (a == "--help" || a == "-h") {
             usage(argv[0]);
         }
@@ -128,6 +134,20 @@ int main(int argc, char* argv[]) {
         S7Client client;
         client.connect(cfg.connection.ip, cfg.connection.rack,
                        cfg.connection.slot, cfg.connection.timeout_ms);
+
+        // ── --list-szl: alle verfügbaren SZL-IDs ausgeben und beenden ─────
+        if (cli.list_szl) {
+            auto ids = client.get_szl_list();
+            std::cout << "Available SZL IDs (" << ids.size() << "):\n";
+            for (size_t i = 0; i < ids.size(); ++i) {
+                std::cout << "  0x" << std::hex << std::setw(4)
+                          << std::setfill('0') << ids[i];
+                if ((i + 1) % 8 == 0) std::cout << "\n";
+                else                   std::cout << "  ";
+            }
+            std::cout << std::dec << "\n";
+            return 0;
+        }
 
         std::string cpu_state = client.get_cpu_state();
         LOG("CPU state: " << cpu_state);
