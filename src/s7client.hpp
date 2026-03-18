@@ -1,0 +1,42 @@
+#pragma once
+#include "address_parser.hpp"
+#include <string>
+#include <vector>
+#include <stdexcept>
+#include <cstdint>
+
+// Forward-declare snap7 type to avoid including snap7.h in header
+typedef void* S7Object;
+
+class S7Exception : public std::runtime_error {
+public:
+    explicit S7Exception(const std::string& msg) : std::runtime_error(msg) {}
+};
+
+struct AreaReadResult {
+    std::vector<uint8_t> data;
+    int  start_byte = 0;   // first byte offset that was read
+};
+
+class S7Client {
+public:
+    S7Client();
+    ~S7Client();
+
+    // Non-copyable
+    S7Client(const S7Client&) = delete;
+    S7Client& operator=(const S7Client&) = delete;
+
+    void connect(const std::string& ip, int rack, int slot, int timeout_ms);
+    void disconnect() noexcept;
+
+    AreaReadResult read_area(S7Area area, int db_number, int start_byte, int byte_count);
+
+    std::string get_cpu_state();
+
+private:
+    S7Object client_ = nullptr;
+
+    static int area_code(S7Area area);
+    static std::string error_text(int code);
+};

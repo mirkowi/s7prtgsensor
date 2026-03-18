@@ -1,0 +1,24 @@
+# Build output
+build/
+out/
+
+# snap7 binaries (must be downloaded manually)
+snap7/include/snap7.h
+snap7/lib/snap7.lib
+snap7/lib/snap7.dll
+snap7/lib/snap7.a
+snap7/bin/
+
+# nlohmann/json (must be downloaded manually)
+third_party/nlohmann/json.hpp
+
+# IDE / OS
+.vscode/
+.vs/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# Debug log
+s7sensor_debug.log

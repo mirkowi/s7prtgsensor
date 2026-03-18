@@ -1,0 +1,42 @@
+{
+  "connection": {
+    "ip": "192.168.1.10",
+    "rack": 0,
+    "slot": 1,
+    "timeout_ms": 3000
+  },
+  "channels": [
+    {
+      "name": "Tanktemperatur",
+      "address": "DB5.DBD10",
+      "datatype": "REAL",
+      "unit": "Temperature",
+      "float_decimals": 1,
+      "limits_enabled": true,
+      "limit_max_warning": 75.0,
+      "limit_max_error": 90.0
+    },
+    {
+      "name": "Pumpendruck",
+      "address": "DB5.DBW20",
+      "datatype": "INT",
+      "scale_factor": 0.1,
+      "unit": "Custom",
+      "customunit": "bar",
+      "float_decimals": 1
+    },
+    {
+      "name": "Motor läuft",
+      "address": "DB5.DBX0.0",
+      "datatype": "BOOL",
+      "unit": "Custom",
+      "customunit": "Status"
+    },
+    {
+      "name": "Fehlerzähler",
+      "address": "MW100",
+      "datatype": "WORD",
+      "unit": "Count"
+    }
+  ]
+}
