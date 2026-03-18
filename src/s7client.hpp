@@ -1,12 +1,10 @@
 #pragma once
 #include "address_parser.hpp"
+#include <snap7.h>
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <cstdint>
-
-// Forward-declare snap7 type to avoid including snap7.h in header
-typedef void* S7Object;
 
 class S7Exception : public std::runtime_error {
 public:
@@ -35,7 +33,7 @@ public:
     std::string get_cpu_state();
 
 private:
-    S7Object client_ = nullptr;
+    S7Object client_ = 0;
 
     static int area_code(S7Area area);
     static std::string error_text(int code);

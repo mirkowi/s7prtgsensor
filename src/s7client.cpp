@@ -5,14 +5,6 @@
 #include <iomanip>
 #include <cstring>
 
-// snap7 area codes
-static const int S7AreaPE = 0x81;  // Inputs
-static const int S7AreaPA = 0x82;  // Outputs
-static const int S7AreaMK = 0x83;  // Flags (Merker)
-static const int S7AreaDB = 0x84;  // Data Blocks
-static const int S7AreaCT = 0x1C;  // Counters
-static const int S7AreaTM = 0x1D;  // Timers
-
 S7Client::S7Client() {
     client_ = Cli_Create();
     if (!client_)
@@ -47,11 +39,10 @@ std::string S7Client::error_text(int code) {
 void S7Client::connect(const std::string& ip, int rack, int slot, int timeout_ms) {
     LOG("Connecting to " << ip << " rack=" << rack << " slot=" << slot << " timeout=" << timeout_ms << "ms");
 
-    // Set connection timeout
-    int send_timeout = timeout_ms;
-    int recv_timeout = timeout_ms;
-    Cli_SetParam(client_, p_u16_SendTimeout, &send_timeout);
-    Cli_SetParam(client_, p_u16_RecvTimeout, &recv_timeout);
+    // Set timeouts (p_i32_SendTimeout=4, p_i32_RecvTimeout=5 in snap7 API)
+    int timeout = timeout_ms;
+    Cli_SetParam(client_, p_i32_SendTimeout, &timeout);
+    Cli_SetParam(client_, p_i32_RecvTimeout, &timeout);
 
     int result = Cli_ConnectTo(client_, ip.c_str(), rack, slot);
     if (result != 0) {
