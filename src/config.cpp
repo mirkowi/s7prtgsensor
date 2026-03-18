@@ -43,7 +43,7 @@ SensorConfig load_config(const std::string& path) {
         ChannelConfig c;
         c.name     = ch.at("name").get<std::string>();
         c.address  = ch.at("address").get<std::string>();
-        c.datatype = parse_datatype(ch.at("datatype").get<std::string>());
+        c.datatype = parse_datatype(ch.value("datatype", std::string("BYTE")));
 
         c.scale_factor  = ch.value("scale_factor", 1.0);
         c.scale_offset  = ch.value("scale_offset", 0.0);
