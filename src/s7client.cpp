@@ -110,11 +110,24 @@ SzlReadResult S7Client::read_szl(int szl_id, int szl_index) {
     SzlReadResult r;
     r.record_length = buf.Header.LENTHDR;
     r.record_count  = buf.Header.N_DR;
+
+    // Header als big-endian WORDs voranstellen → über Byte-Offset adressierbar:
+    //   Byte 0-1: LENTHDR (Länge eines Datensatzes)
+    //   Byte 2-3: N_DR    (Anzahl Datensätze / Einträge)
+    //   Byte 4+ : eigentliche SZL-Daten
+    uint16_t lenhdr = buf.Header.LENTHDR;
+    uint16_t n_dr   = buf.Header.N_DR;
+    r.data.push_back(static_cast<uint8_t>(lenhdr >> 8));
+    r.data.push_back(static_cast<uint8_t>(lenhdr & 0xFF));
+    r.data.push_back(static_cast<uint8_t>(n_dr >> 8));
+    r.data.push_back(static_cast<uint8_t>(n_dr & 0xFF));
+
     int data_size = size - static_cast<int>(sizeof(SZL_HEADER));
     if (data_size > 0)
-        r.data.assign(buf.Data, buf.Data + data_size);
+        r.data.insert(r.data.end(), buf.Data, buf.Data + data_size);
+
     LOG("SZL: record_len=" << r.record_length << " count=" << r.record_count
-        << " data_bytes=" << r.data.size());
+        << " data_bytes=" << (r.data.size() - 4));
     return r;
 }
 
