@@ -44,10 +44,18 @@
       "address": "CPU.Status",
       "datatype": "WORD",
       "unit": "Custom",
-      "customunit": "RUN=1/STOP=0/ERROR=2",
+      "customunit": "RUN=1/STOP=0/UNKNOWN=2",
       "limits_enabled": true,
       "limit_max_warning": 1,
       "limit_max_error": 2
+    },
+    {
+      "name": "CPU Diagnosepuffer",
+      "address": "CPU.DiagBufCount",
+      "datatype": "WORD",
+      "unit": "Count",
+      "limits_enabled": true,
+      "limit_max_warning": 0
     },
     {
       "name": "CPU Typ",

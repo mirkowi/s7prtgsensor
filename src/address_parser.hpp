@@ -37,11 +37,16 @@ struct ParsedAddress {
 };
 
 // Virtuelle Sonderadressen:
-//   CPU.Status                   → CPU-Betriebszustand (1=RUN, 0=STOP)
-//   CPU.Info.ModuleTypeName      → Modultyp-Bezeichnung (string)
-//   CPU.Info.SerialNumber        → Seriennummer (string)
-//   CPU.Info.ASName              → AS-Name / Programmname (string)
-//   CPU.Info.ModuleName          → Modulname (string)
-//   CPU.Info.Copyright           → Copyright-String (string)
-//   SZL.<hex_id>.<index>.<byte>  → SZL-Rohwert, z.B. SZL.0x0132.4.0
+//   CPU.Status        → Betriebszustand: 1=RUN, 0=STOP, 2=UNKNOWN
+//                       ACHTUNG: erkennt NICHT Fehler im RUN-Modus (BF-LED, OB85, I/O-Fehler)
+//                       Für vollständige Überwachung immer zusätzlich CPU.DiagBufCount nutzen.
+//   CPU.DiagBufCount  → Anzahl Einträge im Diagnosepuffer (SZL 0x0074, N_DR).
+//                       Steigt bei jedem Ereignis (Fehler, Warnung, Info, auch nach Quittierung).
+//                       Empfehlung: limit_max_warning: 0  → Alarm ab erstem Eintrag.
+//   CPU.Info.ModuleTypeName  → Modultyp-Bezeichnung (string)
+//   CPU.Info.SerialNumber    → Seriennummer (string)
+//   CPU.Info.ASName          → AS-Name / Programmname (string)
+//   CPU.Info.ModuleName      → Modulname (string)
+//   CPU.Info.Copyright       → Copyright-String (string)
+//   SZL.<hex_id>.<index>.<byte> → SZL-Rohwert (byte 0-1=LENTHDR, 2-3=N_DR, 4+=Daten)
 ParsedAddress parse_address(const std::string& addr, S7DataType dtype);

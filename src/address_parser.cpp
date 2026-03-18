@@ -183,6 +183,16 @@ ParsedAddress parse_address(const std::string& addr, S7DataType dtype) {
         return pa;
     }
 
+    // --- CPU.DiagBufCount → Alias für SZL 0x0074, Byte 2-3 (N_DR) ---
+    if (a == "CPU.DIAGBUFCOUNT") {
+        pa.area        = S7Area::SZL;
+        pa.szl_id      = 0x0074;
+        pa.szl_index   = 0;
+        pa.byte_offset = 2;   // N_DR liegt nach dem 2-Byte LENTHDR
+        pa.byte_size   = 2;
+        return pa;
+    }
+
     // --- CPU.Info.* ---
     {
         static const std::pair<const char*, CpuInfoField> info_fields[] = {
