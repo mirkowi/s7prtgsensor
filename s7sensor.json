@@ -45,7 +45,7 @@
       "address": "CPU.Status",
       "datatype": "BOOL",
       "unit": "Custom",
-      "customunit": "RUN=1/STOP=0"
+      "customunit": "RUN=1/STOP=0/ERROR=2"
     },
     {
       "name": "CPU Typ",

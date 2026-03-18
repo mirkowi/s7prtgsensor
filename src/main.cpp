@@ -185,7 +185,9 @@ int main(int argc, char* argv[]) {
                                     pa.bit_number, ch.datatype);
 
             } else if (pa.area == S7Area::CPU_STATUS) {
-                val = (cpu_state == "RUN") ? int64_t(1) : int64_t(0);
+                if      (cpu_state == "RUN")  val = int64_t(1);
+                else if (cpu_state == "STOP") val = int64_t(0);
+                else                          val = int64_t(2); // UNKNOWN / ERROR
 
             } else if (pa.area == S7Area::CPU_INFO) {
                 switch (pa.cpu_info_field) {
