@@ -63,7 +63,8 @@ s7sensor.exe [Optionen]
 | `--rack <n>` | Überschreibt die Rack-Nummer aus der Konfigurationsdatei. |
 | `--slot <n>` | Überschreibt die Slot-Nummer aus der Konfigurationsdatei. |
 | `--debug` | Aktiviert den Debug-Log (`s7sensor_debug.log` neben der EXE). Niemals auf stdout. |
-| `--list-szl` | Verbindet mit der SPS, gibt alle verfügbaren SZL-IDs aus und beendet das Programm. Nützlich zur Diagnose von SZL-Fehlern. |
+| `--list-szl` | Verbindet mit der SPS, gibt alle verfügbaren SZL-IDs aus und beendet das Programm. |
+| `--dump-szl` | Liest **jede** verfügbare SZL aus und gibt den Inhalt als Hex-Dump aus. Zeigt pro SZL: ID, LENTHDR, N_DR und Rohdaten. Nützlich zur Ermittlung von Byte-Offsets für die Konfiguration. |
 | `--help` | Zeigt Kurzhilfe an. |
 
 ### Beispiele
@@ -77,6 +78,9 @@ s7sensor.exe --config plc1.json --ip 10.0.0.42
 
 rem Verfügbare SZL-IDs der SPS anzeigen
 s7sensor.exe --config plc1.json --list-szl
+
+rem Alle SZLs auslesen und als Hex-Dump ausgeben (Byte-Offsets ermitteln)
+s7sensor.exe --config plc1.json --dump-szl
 
 rem Detailliertes Debugging
 s7sensor.exe --config plc1.json --debug

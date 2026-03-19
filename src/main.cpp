@@ -26,12 +26,13 @@ struct CliArgs {
     int         slot_override  = -1;
     bool        debug          = false;
     bool        list_szl       = false;
+    bool        dump_szl       = false;
 };
 
 static void usage(const char* prog) {
     std::cerr << "Usage: " << prog
               << " [--config <path>] [--ip <addr>] [--rack <n>] [--slot <n>]"
-              << " [--debug] [--list-szl]\n";
+              << " [--debug] [--list-szl] [--dump-szl]\n";
 }
 
 static CliArgs parse_args(int argc, char* argv[]) {
@@ -50,11 +51,39 @@ static CliArgs parse_args(int argc, char* argv[]) {
             args.slot_override = std::stoi(argv[++i]);
         } else if (a == "--list-szl") {
             args.list_szl = true;
+        } else if (a == "--dump-szl") {
+            args.dump_szl = true;
         } else if (a == "--help" || a == "-h") {
             usage(argv[0]);
         }
     }
     return args;
+}
+
+// ── Hex-Dump Hilfsfunktion ────────────────────────────────────────────────────
+
+static void hex_dump(const std::vector<uint8_t>& data, size_t max_bytes = 256) {
+    size_t len = std::min(data.size(), max_bytes);
+    for (size_t row = 0; row < len; row += 16) {
+        std::cout << "    " << std::hex << std::setw(4) << std::setfill('0') << row << ": ";
+        for (size_t col = 0; col < 16; ++col) {
+            if (row + col < len)
+                std::cout << std::setw(2) << std::setfill('0')
+                          << static_cast<int>(data[row + col]) << " ";
+            else
+                std::cout << "   ";
+            if (col == 7) std::cout << " ";
+        }
+        std::cout << " |";
+        for (size_t col = 0; col < 16 && row + col < len; ++col) {
+            char c = static_cast<char>(data[row + col]);
+            std::cout << (c >= 0x20 && c < 0x7F ? c : '.');
+        }
+        std::cout << "|\n";
+    }
+    std::cout << std::dec;
+    if (data.size() > max_bytes)
+        std::cout << "    ... (" << (data.size() - max_bytes) << " weitere Bytes)\n";
 }
 
 // ── Group key for batch reads ─────────────────────────────────────────────────
@@ -146,6 +175,38 @@ int main(int argc, char* argv[]) {
                 else                   std::cout << "  ";
             }
             std::cout << std::dec << "\n";
+            return 0;
+        }
+
+        // ── --dump-szl: jede SZL auslesen und als Hex-Dump ausgeben ───────
+        if (cli.dump_szl) {
+            auto ids = client.get_szl_list();
+            std::cout << "SZL Dump – " << ids.size() << " Listen\n"
+                      << std::string(72, '=') << "\n";
+
+            int ok = 0, failed = 0;
+            for (uint16_t id : ids) {
+                std::cout << "\nSZL 0x" << std::hex << std::setw(4)
+                          << std::setfill('0') << id << std::dec;
+                try {
+                    auto r = client.read_szl(id, 0);
+                    // Byte 0-3 sind unser vorangestellter Header (LENTHDR + N_DR)
+                    // Byte 4+ sind die eigentlichen SZL-Datensätze
+                    int actual_data = static_cast<int>(r.data.size()) - 4;
+                    std::cout << "  LENTHDR=" << r.record_length
+                              << "  N_DR=" << r.record_count
+                              << "  Datenbytes=" << (actual_data > 0 ? actual_data : 0)
+                              << "\n";
+                    if (!r.data.empty())
+                        hex_dump(r.data);
+                    ++ok;
+                } catch (const std::exception& e) {
+                    std::cout << "  FEHLER: " << e.what() << "\n";
+                    ++failed;
+                }
+            }
+            std::cout << "\n" << std::string(72, '=') << "\n"
+                      << "Ergebnis: " << ok << " OK, " << failed << " Fehler\n";
             return 0;
         }
 
