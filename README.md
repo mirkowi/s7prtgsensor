@@ -3,6 +3,9 @@
 PRTG-Sensor zum Auslesen von Siemens SIMATIC S7-SPSen (S7-300, S7-400, S7-1200, S7-1500) über die snap7-Bibliothek. Läuft als nativer **EXE/Script Advanced**-Sensor unter Windows und gibt PRTG-kompatibles XML auf stdout aus.
 
 ---
+## Download
+
+Das aktuelle Release v0.9.0 kann als Binary hier heruntergeladen werden: https://github.com/mirkowi/s7prtgsensor/releases/download/v0.9.0/s7sensor-windows-x64.zip
 
 ## Voraussetzungen
 
