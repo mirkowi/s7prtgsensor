@@ -29,8 +29,14 @@ int S7Client::area_code(S7Area area) {
 }
 
 std::string S7Client::error_text(int code) {
+    char buf[256] = {};
+    Cli_ErrorText(code, buf, sizeof(buf));
+    // Leerzeichen am Ende entfernen
+    std::string txt(buf);
+    while (!txt.empty() && txt.back() == ' ') txt.pop_back();
+
     std::ostringstream oss;
-    oss << "0x" << std::hex << std::setw(8) << std::setfill('0') << code;
+    oss << txt << " (0x" << std::hex << std::setw(8) << std::setfill('0') << code << ")";
     return oss.str();
 }
 

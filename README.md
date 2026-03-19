@@ -362,8 +362,11 @@ s7sensor.exe --config plc1.json --list-szl
 |---|---|---|
 | `0x00C00000` | `errCliItemNotAvailable` – SZL-ID nicht vorhanden | `--list-szl` ausführen, gültige ID verwenden |
 | `0x02200000` | `errCliBufferTooSmall` | Interner Pufferfehler, bitte Issue melden |
-| `0x00050000` | Verbindung abgelehnt | IP/Rack/Slot prüfen, PUT/GET aktivieren |
-| `0x00030000` | Timeout | `timeout_ms` erhöhen, Netzwerk prüfen |
+| `0x00002751` | `WSAEHOSTUNREACH` – Host nicht erreichbar | IP-Adresse, Netzwerk-Route und Firewall prüfen |
+| `0x00002745` | `WSAECONNREFUSED` – Verbindung abgelehnt | SPS läuft, akzeptiert aber keine Verbindung – Rack/Slot prüfen |
+| `0x00002748` | `WSAETIMEDOUT` – Timeout beim Verbinden | `timeout_ms` erhöhen, Netzwerk prüfen |
+| `0x00050000` | Verbindung auf ISO-Ebene abgelehnt | PUT/GET aktivieren, Rack/Slot prüfen |
+| `0x00030000` | Timeout auf ISO-Ebene | `timeout_ms` erhöhen, Netzwerk prüfen |
 
 ---
 
