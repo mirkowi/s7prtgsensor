@@ -65,6 +65,9 @@ s7sensor.exe [Optionen]
 | `--debug` | Aktiviert den Debug-Log (`s7sensor_debug.log` neben der EXE). Niemals auf stdout. |
 | `--list-szl` | Verbindet mit der SPS, gibt alle verfügbaren SZL-IDs aus und beendet das Programm. |
 | `--dump-szl` | Liest **jede** verfügbare SZL aus und gibt den Inhalt als Hex-Dump aus. Zeigt pro SZL: ID, LENTHDR, N_DR und Rohdaten. Nützlich zur Ermittlung von Byte-Offsets für die Konfiguration. |
+| `--read-szl <id>` | Liest eine **bestimmte** SZL aus und gibt den Hex-Dump aus. `<id>` kann dezimal oder hexadezimal (z. B. `0x0074`) angegeben werden. |
+| `--szl-index <n>` | Index für `--read-szl` (Standard: `0`). |
+| `--szl-offset <n>` | Startet den Hex-Dump ab Byte-Offset `<n>` (Standard: `0`). Nützlich um gezielt Datensätze ab einem bestimmten Byte zu analysieren. |
 | `--help` | Zeigt Kurzhilfe an. |
 
 ### Beispiele
@@ -81,6 +84,15 @@ s7sensor.exe --config plc1.json --list-szl
 
 rem Alle SZLs auslesen und als Hex-Dump ausgeben (Byte-Offsets ermitteln)
 s7sensor.exe --config plc1.json --dump-szl
+
+rem Einzelne SZL 0x0074 (Diagnosepuffer) ab Byte 0 ausgeben
+s7sensor.exe --config plc1.json --read-szl 0x0074
+
+rem SZL 0x0074 ab Byte 4 ausgeben (überspringt LENTHDR+N_DR-Header)
+s7sensor.exe --config plc1.json --read-szl 0x0074 --szl-offset 4
+
+rem SZL mit bestimmtem Index und Offset
+s7sensor.exe --config plc1.json --read-szl 0x0131 --szl-index 1 --szl-offset 0
 
 rem Detailliertes Debugging
 s7sensor.exe --config plc1.json --debug
@@ -367,6 +379,42 @@ s7sensor.exe --config plc1.json --list-szl
 | `0x00002748` | `WSAETIMEDOUT` – Timeout beim Verbinden | `timeout_ms` erhöhen, Netzwerk prüfen |
 | `0x00050000` | Verbindung auf ISO-Ebene abgelehnt | PUT/GET aktivieren, Rack/Slot prüfen |
 | `0x00030000` | Timeout auf ISO-Ebene | `timeout_ms` erhöhen, Netzwerk prüfen |
+
+---
+
+## Weiterführende Dokumentation
+
+### snap7 / Bibliotheken
+
+| Ressource | Link |
+|---|---|
+| snap7 GitHub (offizielles Repository) | [github.com/davenardella/snap7](https://github.com/davenardella/snap7) |
+| snap7 Homepage & Referenzhandbuch | [snap7.sourceforge.net](https://snap7.sourceforge.net/) |
+| nlohmann/json | [github.com/nlohmann/json](https://github.com/nlohmann/json) |
+
+### Siemens: PUT/GET-Kommunikation aktivieren
+
+| Ressource | Link |
+|---|---|
+| PUT/GET-Zugriff bei S7-1500 (ab FW V3.1) / S7-1200 (ab FW V4.7) aktivieren (DE) | [support.industry.siemens.com – 109925755](https://support.industry.siemens.com/cs/document/109925755/wie-aktivieren-sie-den-put-get-zugriff-bei-einer-s7-1500-cpu-ab-fw-v3-1-bzw-s7-1200-cpu-ab-fw-v4-7-) |
+| How to activate PUT/GET access on S7-1500 / S7-1200 (EN) | [support.industry.siemens.com – 109925755](https://support.industry.siemens.com/cs/document/109925755/how-do-you-activate-put-get-access-on-an-s7-1500-cpu-from-fw-v3-1-or-s7-1200-cpu-from-fw-v4-7-) |
+
+### Siemens: S7-1500 Diagnose & Diagnosepuffer
+
+| Ressource | Link |
+|---|---|
+| S7-1500 Diagnosefunktionen Handbuch (PDF, EN) | [support.industry.siemens.com – 59192926](https://support.industry.siemens.com/cs/attachments/59192926/s71500_diagnosis_function_manual_en-US_en-US.pdf) |
+| Diagnosepuffer-Inhalte der SIMATIC S7-CPU (EN) | [support.industry.siemens.com – 14960968](https://support.industry.siemens.com/cs/document/14960968/which-information-is-entered-in-the-diagnostic-buffer-of-the-simatic-s7-cpu-with-step-7-v5-x-) |
+| SIMATIC S7-1500 / ET 200MP Manual Collection | [support.industry.siemens.com – 86140384](https://support.industry.siemens.com/cs/document/86140384/simatic-s7-1500-et-200mp-manual-collection) |
+
+### Siemens: Systemzustandsliste (SZL)
+
+| Ressource | Link |
+|---|---|
+| RDSYSST: Systemzustandsliste auslesen (S7-300/400) | [support.industry.siemens.com – 109755202](https://support.industry.siemens.com/cs/mdm/109755202?c=51087599755&lc=de-de) |
+| SIMATIC System- und Standardfunktionen S7-300/400 – Kapitel SZL-IDs (PDF, DE) | [support.industry.siemens.com – 44240604](https://support.industry.siemens.com/cs/attachments/44240604/s7sfc_de-DE.pdf) |
+
+> **Hinweis:** Siemens-Dokumentationslinks erfordern ggf. eine kostenlose Registrierung auf [support.industry.siemens.com](https://support.industry.siemens.com).
 
 ---
 

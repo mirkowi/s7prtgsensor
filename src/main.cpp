@@ -27,12 +27,16 @@ struct CliArgs {
     bool        debug          = false;
     bool        list_szl       = false;
     bool        dump_szl       = false;
+    std::string read_szl_id;   // --read-szl <id>  (hex oder dezimal)
+    int         szl_index      = 0;
+    int         szl_offset     = 0;
 };
 
 static void usage(const char* prog) {
     std::cerr << "Usage: " << prog
               << " [--config <path>] [--ip <addr>] [--rack <n>] [--slot <n>]"
-              << " [--debug] [--list-szl] [--dump-szl]\n";
+              << " [--debug] [--list-szl] [--dump-szl]"
+              << " [--read-szl <id>] [--szl-index <n>] [--szl-offset <n>]\n";
 }
 
 static CliArgs parse_args(int argc, char* argv[]) {
@@ -53,6 +57,12 @@ static CliArgs parse_args(int argc, char* argv[]) {
             args.list_szl = true;
         } else if (a == "--dump-szl") {
             args.dump_szl = true;
+        } else if (a == "--read-szl" && i + 1 < argc) {
+            args.read_szl_id = argv[++i];
+        } else if (a == "--szl-index" && i + 1 < argc) {
+            args.szl_index = std::stoi(argv[++i]);
+        } else if (a == "--szl-offset" && i + 1 < argc) {
+            args.szl_offset = std::stoi(argv[++i]);
         } else if (a == "--help" || a == "-h") {
             usage(argv[0]);
         }
@@ -207,6 +217,30 @@ int main(int argc, char* argv[]) {
             }
             std::cout << "\n" << std::string(72, '=') << "\n"
                       << "Ergebnis: " << ok << " OK, " << failed << " Fehler\n";
+            return 0;
+        }
+
+        // ── --read-szl: einzelne SZL ab Offset ausgeben ───────────────────
+        if (!cli.read_szl_id.empty()) {
+            int szl_id = static_cast<int>(std::stoul(cli.read_szl_id, nullptr, 0));
+            std::cout << "SZL 0x" << std::hex << std::setw(4) << std::setfill('0')
+                      << szl_id << std::dec
+                      << "  Index=" << cli.szl_index
+                      << "  Offset=" << cli.szl_offset << "\n";
+            auto r = client.read_szl(szl_id, cli.szl_index);
+            int actual_data = static_cast<int>(r.data.size()) - 4;
+            std::cout << "LENTHDR=" << r.record_length
+                      << "  N_DR=" << r.record_count
+                      << "  Datenbytes=" << (actual_data > 0 ? actual_data : 0) << "\n";
+            if (cli.szl_offset > 0) {
+                std::cout << "(Ausgabe ab Byte-Offset " << cli.szl_offset << ")\n";
+            }
+            if (cli.szl_offset < static_cast<int>(r.data.size())) {
+                std::vector<uint8_t> slice(r.data.begin() + cli.szl_offset, r.data.end());
+                hex_dump(slice, slice.size());
+            } else {
+                std::cout << "(Offset liegt außerhalb der Daten)\n";
+            }
             return 0;
         }
 
