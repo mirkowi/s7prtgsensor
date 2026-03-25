@@ -5,7 +5,7 @@ PRTG-Sensor zum Auslesen von Siemens SIMATIC S7-SPSen (S7-300, S7-400, S7-1200, 
 ---
 ## Download
 
-Das aktuelle Release v0.9.0 kann als Binary hier heruntergeladen werden: https://github.com/mirkowi/s7prtgsensor/releases/download/v0.9.0/s7sensor-windows-x64.zip
+Das aktuelle Release v0.9.2 kann als Binary hier heruntergeladen werden: https://github.com/mirkowi/s7prtgsensor/releases/download/v0.9.2/s7sensor-windows-x64.zip
 
 ## Voraussetzungen
 
