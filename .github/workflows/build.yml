@@ -65,13 +65,19 @@ jobs:
 
       # ── Release (nur bei v*-Tags) ──────────────────────────────────────────
 
+      - name: Create ZIP
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path build/Release/s7sensor.exe, build/Release/snap7.dll `
+            -DestinationPath s7sensor-windows-x64.zip
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            build/Release/s7sensor.exe
-            build/Release/snap7.dll
+          files: s7sensor-windows-x64.zip
           body: |
             ## PRTG S7 Sensor ${{ github.ref_name }}
 
@@ -79,3 +85,20 @@ jobs:
             1. `s7sensor.exe` + `snap7.dll` → `%PRTG_PROGRAM_ROOT%\Custom Sensors\EXEXML\`
             2. Konfigurationsdatei (`s7sensor.json`) ebenfalls dorthin kopieren
             3. Sensor-Typ: **EXE/Script Advanced**, Parameter: `--config "%scriptlocation%\s7sensor.json"`
+
+      - name: Update README download link
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $url  = "https://github.com/mirkowi/s7prtgsensor/releases/download/$tag/s7sensor-windows-x64.zip"
+          $content = Get-Content README.md -Raw
+          $content = $content -replace `
+            'Das aktuelle Release v[\d.]+ kann als Binary hier heruntergeladen werden: https://\S+', `
+            "Das aktuelle Release $tag kann als Binary hier heruntergeladen werden: $url"
+          Set-Content README.md $content -NoNewline
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --cached --quiet || git commit -m "chore: update README download link to $tag [skip ci]"
+          git push origin HEAD:refs/heads/main
